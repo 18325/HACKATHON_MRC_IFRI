@@ -1,9 +1,9 @@
-import EcommerceMetrics from "../../components/ecommerce/EcommerceMetrics";
-import MonthlySalesChart from "../../components/ecommerce/MonthlySalesChart";
-import StatisticsChart from "../../components/ecommerce/StatisticsChart";
-import MonthlyTarget from "../../components/ecommerce/MonthlyTarget";
-import RecentOrders from "../../components/ecommerce/RecentOrders";
-import DemographicCard from "../../components/ecommerce/DemographicCard";
+import Metrics from "../../components/statistic/Metrics.tsx";
+import MonthlySalesChart from "../../components/statistic/MonthlySalesChart";
+import StatisticsChart from "../../components/statistic/StatisticsChart";
+import MonthlyTarget from "../../components/statistic/MonthlyTarget";
+import RecentOrders from "../../components/statistic/RecentOrders";
+import DemographicCard from "../../components/statistic/DemographicCard";
 import PageMeta from "../../components/common/PageMeta";
 
 export default function Home() {
@@ -15,7 +15,7 @@ export default function Home() {
       />
       <div className="grid grid-cols-12 gap-4 md:gap-6">
         <div className="col-span-12 space-y-6 xl:col-span-7">
-          <EcommerceMetrics />
+          <Metrics />
 
           <MonthlySalesChart />
         </div>

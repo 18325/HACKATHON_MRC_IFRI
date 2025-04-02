@@ -6,17 +6,13 @@ import {
   BoxCubeIcon,
   CalenderIcon,
   ChevronDownIcon,
-  GridIcon,
+  GridIcon, GroupIcon,
   HorizontaLDots,
-  ListIcon,
-  PageIcon,
   PieChartIcon,
-  PlugInIcon,
-  TableIcon,
   UserCircleIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
-import SidebarWidget from "./SidebarWidget";
+import useAuth from "../hooks/useAuth.ts";
 
 type NavItem = {
   name: string;
@@ -29,37 +25,46 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
+    path: "/user/home",
+  },
+  {
+    name: "Patients",
+    icon: <GroupIcon />,
+    path: "/user/patients"
   },
   {
     icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
+    name: "Appointment",
+    path: "/user/calendar",
+  },
+  {
+    icon: <CalenderIcon />,
+    name: "Medical Record",
+    path: "/user/calendar",
   },
   {
     icon: <UserCircleIcon />,
     name: "User Profile",
-    path: "/profile",
-  },
-  {
-    name: "Forms",
-    icon: <ListIcon />,
-    subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
-  },
-  {
-    name: "Tables",
-    icon: <TableIcon />,
-    subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
-  },
-  {
-    name: "Pages",
-    icon: <PageIcon />,
-    subItems: [
-      { name: "Blank Page", path: "/blank", pro: false },
-      { name: "404 Error", path: "/error-404", pro: false },
-    ],
+    path: "/user/profile",
   },
 ];
+const adminItems: NavItem[] = [
+  {
+    icon: <GridIcon />,
+    name: "Dashboard",
+    path: "/admin/home",
+  },
+  {
+    name: "Doctors",
+    icon: <GroupIcon />,
+    path: "/admin/doctors"
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "Profile",
+    path: "/admin/profile",
+  },
+]
 
 const othersItems: NavItem[] = [
   {
@@ -82,19 +87,12 @@ const othersItems: NavItem[] = [
       { name: "Videos", path: "/videos", pro: false },
     ],
   },
-  {
-    icon: <PlugInIcon />,
-    name: "Authentication",
-    subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
-    ],
-  },
 ];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
+  const {auth} = useAuth();
 
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main" | "others";
@@ -114,7 +112,7 @@ const AppSidebar: React.FC = () => {
   useEffect(() => {
     let submenuMatched = false;
     ["main", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : othersItems;
+      const items = menuType === "main" ? (auth.role==="user"? navItems: adminItems) : othersItems;
       items.forEach((nav, index) => {
         if (nav.subItems) {
           nav.subItems.forEach((subItem) => {
@@ -305,29 +303,32 @@ const AppSidebar: React.FC = () => {
       >
         <Link to="/">
           {isExpanded || isHovered || isMobileOpen ? (
-            <>
-              <img
-                className="dark:hidden"
-                src="/images/logo/logo.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              />
-              <img
-                className="hidden dark:block"
-                src="/images/logo/logo-dark.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              />
-            </>
+              <>
+                <div className="flex items-center gap-1 max-w-xs">
+                  <img
+                      className="dark:hidden"
+                      src="/images/logo/lo.png"
+                      alt="Logo"
+                      width={40}
+                      height={40}
+                  />
+                  <img
+                      className="hidden dark:block"
+                      src="/images/logo/lo.png"
+                      alt="Logo"
+                      width={40}
+                      height={40}
+                  />
+                  <h1 className="text-xl text-gray-800 font-bold dark:text-white">RenalCare</h1>
+                </div>
+              </>
           ) : (
-            <img
-              src="/images/logo/logo-icon.svg"
-              alt="Logo"
-              width={32}
-              height={32}
-            />
+              <img
+                  src="/images/logo/lo.png"
+                  alt="Logo"
+                  width={32}
+                  height={32}
+              />
           )}
         </Link>
       </div>
@@ -335,20 +336,20 @@ const AppSidebar: React.FC = () => {
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
             <div>
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
-                }`}
+            <h2
+                  className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
+                      !isExpanded && !isHovered
+                          ? "lg:justify-center"
+                          : "justify-start"
+                  }`}
               >
-                {isExpanded || isHovered || isMobileOpen ? (
+              {isExpanded || isHovered || isMobileOpen ? (
                   "Menu"
                 ) : (
                   <HorizontaLDots className="size-6" />
                 )}
               </h2>
-              {renderMenuItems(navItems, "main")}
+              {renderMenuItems(auth.role==="user"?navItems:adminItems, "main")}
             </div>
             <div className="">
               <h2
@@ -368,7 +369,6 @@ const AppSidebar: React.FC = () => {
             </div>
           </div>
         </nav>
-        {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
       </div>
     </aside>
   );
