@@ -1,0 +1,50 @@
+
+
+@keyframes fade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes slideInRight {
+  from{
+    transform: translateY(0);
+    opacity: 0;
+  }
+  to{
+    transform: translateY(100%);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@function getAnimationDuration($duration: number) {
+  @return calc($duration * 1);
+}
+
+.toast{
+  position: fixed;
+  top: -70px;
+  right: 32%;
+  //bottom: 40px;
+  border-radius: 5px;
+  z-index: 999999;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  opacity: 0.9;
+  animation: fadeIn 0.5s, fadeOut 0.5s 1.5s, getAnimationDuration(1s) slideInRight forwards
+}

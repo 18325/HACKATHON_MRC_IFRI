@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const apiUrl = 'https://renal-track-454a57ef8198.herokuapp.com/api/'
+const apiUrl = 'http://localhost:8001/api'
 
 export const axiosClient = axios.create({
     baseURL: apiUrl,

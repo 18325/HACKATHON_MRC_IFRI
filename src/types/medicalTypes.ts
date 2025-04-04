@@ -45,38 +45,54 @@ export interface Appointment {
     dateOfBirth: string; // ISO string
 }
 
+export interface Consultation {
+    id: string;
+    patient_id: string;
+    doctor_id: string;
+    date: string;
+    doctor_remarks: string,
+    prescriptions: string,
+    testResults: string,
+    status: "confirmed" | "scheduled" | "cancelled";
+    patient: {
+        first_name: string;
+        last_name: string;
+    };
+    doctor: {
+        first_name: string;
+        last_name: string;
+    }
+}
+
 // Interface pour Patient
 export interface Patient {
     id: number;
-    firstName: string;
-    lastName: string;
+    first_name: string;
+    last_name: string;
     dateOfBirth: string;
-    gender: string;
-    tel: string;
+    email?: string;
+    gender: "Homme"|"Femme"|"Autre";
+    phone: string;
     address: string;
-    bloodGroup: string;
-    medicalHistory: string;
-    currentTreatments: string;
+    blood_group: "A+"| "A-"| "B+"| "B-"| "AB+"| "AB-"| "O+"| "O-"|"";
+    medical_history: string;
+    current_treatments: string;
     stage_mrc: number;
     uniqueId: string;
     emergencyContactName: string;
     emergencyContactPhone: string;
+    medical_data?: MedicalData;
+    administrative_data?: AdministrativeData
+
 }
 
 // Interface pour MedicalData
 export interface MedicalData {
     id: number;
-    medicalHistory: string;
-    currentTreatment: string;
-}
-
-// Interface pour Consultation
-export interface Consultation {
-    id: number;
-    prescriptions: string;
-    testResults: string;
-    visitDate: string; // ISO string
-    // Méthode: setReminder(): void
+    blood_group: "A+"| "A-"| "B+"| "B-"| "AB+"| "AB-"| "O+"| "O-"|"";
+    medical_history: string;
+    current_treatments: string;
+    stage_mrc: number;
 }
 
 // Interface pour WorkFlow
@@ -103,6 +119,8 @@ export interface AdministrativeData {
     id: number;
     recordNumber: string;
     referingDoctor: string;
+    emergencyContactName: string;
+    emergencyContactPhone: string;
 }
 
 // Interface pour Report

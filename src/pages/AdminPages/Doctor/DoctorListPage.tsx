@@ -93,6 +93,7 @@ export default function DoctorListPage() {
                 console.log(error.response)
                 setError(error.response.data.errors || {});
             }
+            console.log(error.response)
         },
     });
 

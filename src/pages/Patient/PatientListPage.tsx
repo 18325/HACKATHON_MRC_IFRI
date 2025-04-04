@@ -17,13 +17,16 @@ import {useForm, SubmitHandler, Controller} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Patient } from "../../types/medicalTypes.ts";
 import PatientTableOne from "../../components/tables/BasicTables/PatientTableOne.tsx";
-import { v4 as uuidv4 } from "uuid"; // Importer uuid pour générer un identifiant unique
+import { v4 as uuidv4 } from "uuid";
+import TextArea from "../../components/form/input/TextArea.tsx";
+import Alert from "../../components/ui/alert/Alert.tsx";
 
 // Schéma de validation avec Zod pour le formulaire Patient
 const patientSchema = z.object({
     // Informations personnelles
     firstName: z.string().min(1, "Le prénom est requis"),
     lastName: z.string().min(1, "Le nom est requis"),
+    email: z.string().email("L’email doit être valide").min(1, "L’email est requis"),
     dateOfBirth: z.string().min(1, "La date de naissance est requise"),
     gender: z.enum(["Homme", "Femme", "Autre"], {
         errorMap: () => ({ message: "Le genre est requis" }),
@@ -40,7 +43,7 @@ const patientSchema = z.object({
     }),
     medicalHistory: z.string().optional(),
     currentTreatments: z.string().optional(),
-    stage_mrc: z.number().int().min(0, "La date MRC doit être un entier positif"),
+    stage_mrc: z.number().int().min(1, "La date MRC doit être un entier positif égale à 1 minimum"),
 
     // Données administratives
     uniqueId: z.string().min(1, "L’identifiant unique est requis"),
@@ -56,15 +59,17 @@ type PatientFormData = z.infer<typeof patientSchema>;
 
 // Interface pour les erreurs renvoyées par Laravel
 interface ValidationErrors {
-    firstName?: string;
-    lastName?: string;
+    first_name?: string;
+    last_name?: string;
     dateOfBirth?: string;
+    message?: string;
     gender?: string;
     tel?: string;
+    email?: string;
     address?: string;
     bloodGroup?: string;
-    medicalHistory?: string;
-    currentTreatments?: string;
+    medical_history?: string;
+    current_treatments?: string;
     stage_mrc?: string;
     uniqueId?: string;
     emergencyContactName?: string;
@@ -116,20 +121,21 @@ export default function PatientListPage() {
         handleSubmit,
         reset,
         control,
-        formState: { errors, isSubmitting },
+        formState: { errors },
     } = useForm<PatientFormData>({
         resolver: zodResolver(patientSchema),
         defaultValues: {
             firstName: "",
             lastName: "",
             dateOfBirth: "",
+            email: "",
             gender: undefined,
             tel: "",
             address: "",
             bloodGroup: undefined,
             medicalHistory: "",
             currentTreatments: "",
-            stage_mrc: 0,
+            stage_mrc: 1,
             uniqueId: generateUniqueId(), // Générer un identifiant unique par défaut
             emergencyContactName: "",
             emergencyContactPhone: "",
@@ -139,10 +145,11 @@ export default function PatientListPage() {
     // Mutation pour ajouter un patient
     const mutation = useMutation({
         mutationFn: async (patient: Omit<Patient, "id">) => {
+            setError({});
             const response = await axiosPrivate.post("/patients", patient);
             return response.data;
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ["patients"] });
             queryClient.invalidateQueries({ queryKey: ["stat"] });
             reset({
@@ -154,12 +161,14 @@ export default function PatientListPage() {
                 address: "",
                 bloodGroup: undefined,
                 medicalHistory: "",
+                email: "",
                 currentTreatments: "",
                 stage_mrc: 1,
                 uniqueId: generateUniqueId(), // Régénérer un nouvel identifiant unique après réinitialisation
                 emergencyContactName: "",
                 emergencyContactPhone: "",
             });
+            setError({message: data.message})
             closeModal();
         },
         onError: (error: ApiError) => {
@@ -171,6 +180,7 @@ export default function PatientListPage() {
                 setError({
                     general: "Une erreur est survenu"
                 })
+                console.log(error.response)
             }
         },
     });
@@ -182,15 +192,16 @@ export default function PatientListPage() {
     const onSubmit: SubmitHandler<PatientFormData> = (data) => {
         console.log(data)
         mutation.mutate({
-            firstName: data.firstName,
-            lastName: data.lastName,
+            first_name: data.firstName,
+            last_name: data.lastName,
             dateOfBirth: data.dateOfBirth,
             gender: data.gender,
-            tel: data.tel,
+            phone: data.tel,
+            email: data.email,
             address: data.address,
-            bloodGroup: data.bloodGroup,
-            medicalHistory: data.medicalHistory || "",
-            currentTreatments: data.currentTreatments || "",
+            blood_group: data.bloodGroup,
+            medical_history: data.medicalHistory || "",
+            current_treatments: data.currentTreatments || "",
             stage_mrc: data.stage_mrc,
             uniqueId: data.uniqueId,
             emergencyContactName: data.emergencyContactName,
@@ -204,6 +215,7 @@ export default function PatientListPage() {
             firstName: "",
             lastName: "",
             dateOfBirth: "",
+            email: "",
             gender: undefined,
             tel: "",
             address: "",
@@ -223,6 +235,9 @@ export default function PatientListPage() {
         <div>
             <PageMeta title="Gestion des patients" description="Patients" />
             <PageBreadcrumb pageTitle="Gestion des patients" pagePath="/dash/dashboard" />
+            {mutation.isSuccess&&!!error.message &&
+                <Alert variant="success" seconds={3} title="Opération effectué" message={error.message}/>
+            }
             <div className="space-y-6">
                 <ComponentCard title="Liste des patients">
                     <div className="flex gap-4 flex-wrap justify-between">
@@ -295,21 +310,21 @@ export default function PatientListPage() {
                                 </h5>
                                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                                     <div className="col-span-2 lg:col-span-1">
-                                        <Label>Prénoms</Label>
-                                        <Input
-                                            placeholder="Prénoms"
-                                            {...register("firstName")}
-                                            error={!!errors.firstName || !!error.firstName}
-                                            hint={errors.firstName?.message || error.firstName}
-                                        />
-                                    </div>
-                                    <div className="col-span-2 lg:col-span-1">
                                         <Label>Nom</Label>
                                         <Input
                                             placeholder="Nom"
                                             {...register("lastName")}
-                                            error={!!errors.lastName || !!error.lastName}
-                                            hint={errors.lastName?.message || error.lastName}
+                                            error={!!errors.lastName || !!error.last_name}
+                                            hint={errors.lastName?.message || error.last_name}
+                                        />
+                                    </div>
+                                    <div className="col-span-2 lg:col-span-1">
+                                        <Label>Prénoms</Label>
+                                        <Input
+                                            placeholder="Prénoms"
+                                            {...register("firstName")}
+                                            error={!!errors.firstName || !!error.first_name}
+                                            hint={errors.firstName?.message || error.first_name}
                                         />
                                     </div>
                                     <div className="col-span-2 lg:col-span-1">
@@ -324,27 +339,36 @@ export default function PatientListPage() {
                                     <div className="col-span-2 lg:col-span-1">
                                         <Label>Genre</Label>
                                         <Controller
-                                        name="gender"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <Select
-                                                options={genderOptions}
-                                                placeholder="Sélectionner le genre"
-                                                value={field.value || ""}
-                                                onChange={(value) => field.onChange(value)}
-                                                error={!!errors.gender}
-                                                hint={errors.gender?.message}
-                                            />
-                                        )}
-                                    />
+                                            name="gender"
+                                            control={control}
+                                            render={({field}) => (
+                                                <Select
+                                                    options={genderOptions}
+                                                    placeholder="Sélectionner le genre"
+                                                    value={field.value || ""}
+                                                    onChange={(value) => field.onChange(value)}
+                                                    error={!!errors.gender || !!error.gender}
+                                                    hint={errors.gender?.message || error.gender}
+                                                />
+                                            )}
+                                        />
                                     </div>
                                     <div className="col-span-2 lg:col-span-1">
                                         <Label>Téléphone</Label>
                                         <Input
                                             placeholder="Téléphone"
                                             {...register("tel")}
-                                            error={!!errors.tel}
-                                            hint={errors.tel?.message}
+                                            error={!!errors.tel || !!error.tel}
+                                            hint={errors.tel?.message || error.tel}
+                                        />
+                                    </div>
+                                    <div className="col-span-2 lg:col-span-1">
+                                        <Label>Email</Label>
+                                        <Input
+                                            placeholder="Email"
+                                            {...register("email")}
+                                            error={!!errors.email || !!error.email}
+                                            hint={errors.email?.message || error.email}
                                         />
                                     </div>
                                     <div className="col-span-2 lg:col-span-2">
@@ -352,8 +376,8 @@ export default function PatientListPage() {
                                         <Input
                                             placeholder="Adresse"
                                             {...register("address")}
-                                            error={!!errors.address}
-                                            hint={errors.address?.message}
+                                            error={!!errors.address || !!error.address}
+                                            hint={errors.address?.message || error.address}
                                         />
                                     </div>
                                 </div>
@@ -368,45 +392,59 @@ export default function PatientListPage() {
                                         <Controller
                                             name="bloodGroup"
                                             control={control}
-                                            render={({ field }) => (
+                                            render={({field}) => (
                                                 <Select
                                                     options={bloodGroupOptions}
                                                     placeholder="Sélectionner le groupe sanguin"
                                                     value={field.value || ""}
                                                     onChange={(value) => field.onChange(value)}
-                                                    error={!!errors.bloodGroup}
-                                                    hint={errors.bloodGroup?.message}
+                                                    error={!!errors.bloodGroup || !!error.bloodGroup}
+                                                    hint={errors.bloodGroup?.message || error.bloodGroup}
                                                 />
                                             )}
                                         />
                                     </div>
-                                    <div className="col-span-2 lg:col-span-1">
+                                    <div className="col-span-1 lg:col-span-1">
                                         <Label>Stade MRC</Label>
                                         <Input
                                             type="number"
-                                            {...register("stage_mrc", { valueAsNumber: true })}
-                                            error={!!errors.stage_mrc}
-                                            hint={errors.stage_mrc?.message}
+                                            {...register("stage_mrc", {valueAsNumber: true})}
+                                            error={!!errors.stage_mrc || !!error.stage_mrc}
+                                            hint={errors.stage_mrc?.message || error.stage_mrc}
                                         />
                                     </div>
-                                    <div className="col-span-2 lg:col-span-1">
-                                        <Label>Historique médical (facultatif)</Label>
-                                        <Input
-                                            placeholder="Historique médical"
-                                            {...register("medicalHistory")}
-                                            error={!!errors.medicalHistory}
-                                            hint={errors.medicalHistory?.message}
-                                        />
-                                    </div>
-                                    <div className="col-span-2 lg:col-span-1">
-                                        <Label>Traitement en cours (facultatif)</Label>
-                                        <Input
-                                            placeholder="Traitement en cours"
-                                            {...register("currentTreatments")}
-                                            error={!!errors.currentTreatments}
-                                            hint={errors.currentTreatments?.message}
-                                        />
-                                    </div>
+                                </div>
+                                <div className="col-span-1 my-5 lg:col-span-1">
+                                    <Label>Historique médical (facultatif)</Label>
+                                    <Controller
+                                        name="medicalHistory"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <TextArea
+                                                placeholder="Une description de l'historique médical"
+                                                value={field.value || ""}
+                                                onChange={(value) => field.onChange(value)}
+                                                error={!!errors.medicalHistory || !!error.medical_history}
+                                                hint={errors.medicalHistory?.message || error.medical_history}
+                                            />
+                                        )}
+                                    />
+                                </div>
+                                <div className="col-span-2 my-5 lg:col-span-1">
+                                    <Label>Traitement en cours (facultatif)</Label>
+                                    <Controller
+                                        name="currentTreatments"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <TextArea
+                                                placeholder="Une description du ou des traitements en cours"
+                                                value={field.value || ""}
+                                                onChange={(value) => field.onChange(value)}
+                                                error={!!errors.currentTreatments || !!error.current_treatments}
+                                                hint={errors.currentTreatments?.message || error.current_treatments}
+                                            />
+                                        )}
+                                    />
                                 </div>
 
                                 {/* Données administratives */}
@@ -419,8 +457,8 @@ export default function PatientListPage() {
                                         <Input
                                             placeholder="Identifiant unique"
                                             {...register("uniqueId")}
-                                            error={!!errors.uniqueId}
-                                            hint={errors.uniqueId?.message}
+                                            error={!!errors.uniqueId || !!error.uniqueId}
+                                            hint={errors.uniqueId?.message || error.uniqueId}
                                             readOnly // Champ en lecture seule car généré automatiquement
                                         />
                                     </div>
@@ -429,8 +467,8 @@ export default function PatientListPage() {
                                         <Input
                                             placeholder="Nom du contact d’urgence"
                                             {...register("emergencyContactName")}
-                                            error={!!errors.emergencyContactName}
-                                            hint={errors.emergencyContactName?.message}
+                                            error={!!errors.emergencyContactName || !!error.emergencyContactName}
+                                            hint={errors.emergencyContactName?.message || error.emergencyContactName}
                                         />
                                     </div>
                                     <div className="col-span-2 lg:col-span-1">
@@ -438,8 +476,9 @@ export default function PatientListPage() {
                                         <Input
                                             placeholder="Téléphone du contact d’urgence"
                                             {...register("emergencyContactPhone")}
-                                            error={!!errors.emergencyContactPhone}
-                                            hint={errors.emergencyContactPhone?.message}
+                                            error={!!errors.emergencyContactPhone || !!error.emergencyContactPhone}
+                                            hint={errors.emergencyContactPhone?.message || error.emergencyContactPhone}
+
                                         />
                                     </div>
                                 </div>
@@ -455,21 +494,21 @@ export default function PatientListPage() {
                                 onClick={handleCloseModal}
                                 type="button"
                                 className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
-                                disabled={isSubmitting}
+                                disabled={mutation.isPending}
                             >
                                 Fermer
                             </button>
                             <button
                                 type="submit"
                                 className={`${
-                                    isSubmitting
+                                    mutation.isPending
                                         ? "flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
                                         : "btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
                                 }`}
-                                disabled={isSubmitting}
+                                disabled={mutation.isPending }
                             >
-                                {isSubmitting ? (
-                                    <p>...</p>
+                                {mutation.isPending ? (
+                                    <p>Ajout en cours ...</p>
                                 ) : (
                                     "Valider"
                                 )}

@@ -1,12 +1,11 @@
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../ui/table";
 import Button from "../../ui/button/Button.tsx";
-import { Link } from "react-router-dom"; // Corrigé pour React Router v6+
 // import { RotatingLines } from "react-loader-spinner";
 import { useAxiosPrivate } from "../../../hooks/useAxiosPrivate.ts";
 import { useQuery } from "@tanstack/react-query";
 import { Patient } from "../../../types/medicalTypes.ts"; // Importer le type Patient
 import { useState } from "react";
-import Loader from "../../Loader.tsx";
+import {Link} from "react-router";
 
 export default function PatientTableOne({ searchTerm, itemsPerPage }: { searchTerm: string; itemsPerPage: number }) {
     const axiosPrivate = useAxiosPrivate();
@@ -15,6 +14,7 @@ export default function PatientTableOne({ searchTerm, itemsPerPage }: { searchTe
     // Récupérer les patients depuis l’API
     const fetchPatients = async (): Promise<Patient[]> => {
         const response = await axiosPrivate.get("/patients");
+        console.log(response.data)
         return response.data as Patient[];
     };
 
@@ -26,8 +26,8 @@ export default function PatientTableOne({ searchTerm, itemsPerPage }: { searchTe
     // Filtrer les patients en fonction du terme de recherche
     const filteredPatients = patients?.filter((patient) => {
         return (
-            patient.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            patient.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            patient.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            patient.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             patient.address.toLowerCase().includes(searchTerm.toLowerCase())
         );
     });
@@ -47,8 +47,8 @@ export default function PatientTableOne({ searchTerm, itemsPerPage }: { searchTe
                         error ? (
                             <p className="text-center">Erreur lors du chargement des données</p>
                         ) : (
-                            <div className="h-32 flex items-center justify-center">
-                                <Loader />
+                            <div className="h-32 flex text-gray-800 dark:text-white/90 items-center justify-center">
+                                <p>Chargement ...</p>
                             </div>
                         )
                     ) : patients?.length === 0 ? (
@@ -89,7 +89,7 @@ export default function PatientTableOne({ searchTerm, itemsPerPage }: { searchTe
                                             isHeader
                                             className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                                         >
-                                            Date MRC
+                                            Stade MRC
                                         </TableCell>
                                         <TableCell
                                             isHeader
@@ -108,7 +108,7 @@ export default function PatientTableOne({ searchTerm, itemsPerPage }: { searchTe
                                                 <div className="flex items-center gap-3">
                                                     <div>
                             <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                              {`${patient.firstName} ${patient.lastName}`}
+                              {`${patient.first_name} ${patient.last_name}`}
                             </span>
                                                     </div>
                                                 </div>
@@ -117,16 +117,16 @@ export default function PatientTableOne({ searchTerm, itemsPerPage }: { searchTe
                                                 {new Date(patient.dateOfBirth).toLocaleDateString()}
                                             </TableCell>
                                             <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                                {patient.tel}
+                                                {patient.phone}
                                             </TableCell>
                                             <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                                 {patient.address}
                                             </TableCell>
                                             <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                                {patient.date_mrc}
+                                                {patient.stage_mrc}
                                             </TableCell>
                                             <TableCell className="flex justify-end px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                                                <Link to={`/dash/patient/${patient.id}`}>
+                                                <Link to={`/user/patient/${patient.id}`}>
                                                     <Button size="sm" variant="primary">
                                                         Voir plus de détails
                                                     </Button>

@@ -1,6 +1,5 @@
 import {Route, Routes} from "react-router";
 import Home from "./pages/Dashboard/Home.tsx";
-import UserProfiles from "./pages/UserProfiles.tsx";
 import Calendar from "./pages/Calendar.tsx";
 import FormElements from "./pages/Forms/FormElements.tsx";
 import BasicTables from "./pages/Tables/BasicTables.tsx";
@@ -13,6 +12,8 @@ import Videos from "./pages/UiElements/Videos.tsx";
 import LineChart from "./pages/Charts/LineChart.tsx";
 import BarChart from "./pages/Charts/BarChart.tsx";
 import PatientListPage from "./pages/Patient/PatientListPage.tsx";
+import PatientDetailPage from "./pages/Patient/PatientDetailPage.tsx";
+import AdminProfiles from "./pages/AdminPages/AdminProfiles.tsx";
 
 function DashboardUserRoute  () {
 
@@ -21,11 +22,10 @@ function DashboardUserRoute  () {
                 <Route index path="/home" element={<Home />} />
 
                 {/* Others Page */}
-                <Route path="/profile" element={<UserProfiles />} />
+                <Route path="/profile" element={<AdminProfiles />} />
                 <Route path="/calendar" element={<Calendar />} />
-                <Route path="/patients" element={<PatientListPage />} />
-                <Route path="/patient/:id" element={<PatientListPage />} />
-
+                <Route path="/patient" element={<PatientListPage />} />
+                <Route path="/patient/:id" element={<PatientDetailPage />} />
 
                 {/* Forms */}
                 <Route path="/form-elements" element={<FormElements />} />

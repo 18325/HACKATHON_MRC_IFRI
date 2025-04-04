@@ -24,9 +24,10 @@ export default function App() {
             <Route element={<RequireAuth/>}>
               <Route element={<AppLayout />}>
                 {
-                  auth.role === "user"?
-                      <Route path="/user/*" element={<DashboardUserRoute/>}/> :
+                  auth.role === "admin"?
                       <Route path="/admin/*" element={<DashboardAdminRoute/>}/>
+                      :<Route path="/user/*" element={<DashboardUserRoute/>}/>
+
                 }
               </Route>
             </Route>

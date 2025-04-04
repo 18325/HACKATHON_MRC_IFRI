@@ -24,38 +24,33 @@ type NavItem = {
 const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
-    name: "Dashboard",
+    name: "Tableau de bord",
     path: "/user/home",
   },
   {
-    name: "Patients",
+    name: "Gestion des patients",
     icon: <GroupIcon />,
-    path: "/user/patients"
+    path: "/user/patient"
   },
   {
     icon: <CalenderIcon />,
-    name: "Appointment",
-    path: "/user/calendar",
-  },
-  {
-    icon: <CalenderIcon />,
-    name: "Medical Record",
+    name: "Gestion des rendez-vous",
     path: "/user/calendar",
   },
   {
     icon: <UserCircleIcon />,
-    name: "User Profile",
+    name: "Profile",
     path: "/user/profile",
   },
 ];
 const adminItems: NavItem[] = [
   {
     icon: <GridIcon />,
-    name: "Dashboard",
+    name: "Tableau de bord",
     path: "/admin/home",
   },
   {
-    name: "Doctors",
+    name: "Gestion des doctors",
     icon: <GroupIcon />,
     path: "/admin/doctors"
   },
@@ -79,7 +74,7 @@ const othersItems: NavItem[] = [
     icon: <BoxCubeIcon />,
     name: "UI Elements",
     subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
+      { name: "Alerts", path: "user/alerts", pro: false },
       { name: "Avatar", path: "/avatars", pro: false },
       { name: "Badge", path: "/badge", pro: false },
       { name: "Buttons", path: "/buttons", pro: false },
@@ -105,7 +100,7 @@ const AppSidebar: React.FC = () => {
 
   // const isActive = (path: string) => location.pathname === path;
   const isActive = useCallback(
-    (path: string) => location.pathname === path,
+    (path: string) => location.pathname.startsWith(path),
     [location.pathname]
   );
 

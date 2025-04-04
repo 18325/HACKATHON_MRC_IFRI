@@ -22,7 +22,8 @@ const useRefreshToken = () => {
             );
             setAuth({
                 ...auth,
-                accessToken: response.data.body.accessToken
+                accessToken: response.data.body.accessToken,
+                role: response.data.body.role
             });
             console.log(response)
             return response.data.body.accessToken;

@@ -15,6 +15,14 @@ export interface ApiError {
                 type?: string;
                 date?: string;
                 description?: string;
+                patient_id?: string,
+                notes?: string,
+                current_treatments?: string;
+                stage_mrc?: string;
+                uniqueId?: string;
+                emergencyContactName?: string;
+                emergencyContactPhone?: string;
+                general?: string;
             }
         }
         status: number

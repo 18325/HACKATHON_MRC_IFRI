@@ -40,7 +40,7 @@ function PersistLogin () {
     return (
         <>
             {
-                isLoading? <div className="w-screen h-screen flex justify-center items-center">
+                isLoading? <div className="w-screen h-screen text-gray-800 dark:text-white/90 flex justify-center items-center">
                         Chargement ...
                     </div>
                     : <Outlet />

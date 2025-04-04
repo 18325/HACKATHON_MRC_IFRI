@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -7,277 +7,462 @@ import { EventInput, DateSelectArg, EventClickArg } from "@fullcalendar/core";
 import { Modal } from "../components/ui/modal";
 import { useModal } from "../hooks/useModal";
 import PageMeta from "../components/common/PageMeta";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAxiosPrivate } from "../hooks/useAxiosPrivate.ts";
+import Select from "../components/form/Select.tsx";
+import Label from "../components/form/Label.tsx";
+import { jsPDF } from "jspdf";
+import { useForm, Controller } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import ReactSelect from "react-select";
+import {ApiError} from "../types/types.ts";
+import Alert from "../components/ui/alert/Alert.tsx";
+import {Patient} from "../types/medicalTypes.ts";
+import Button from "../components/ui/button/Button.tsx";
+import Input from "../components/form/input/InputField.tsx"; // Importer react-select
 
-interface CalendarEvent extends EventInput {
+interface ValidationErrors {
+  date?: string;
+  patient_id?: string,
+  type?: string,
+  notes?: string,
+  general?: string
+  error?: string
+  message?: string
+}
+
+// Schéma de validation pour un rendez-vous
+const appointmentSchema = z.object({
+  patient_id: z.string().min(1, "Le patient est requis"),
+  date: z.string().min(1, "La date est requise"),
+  type: z.enum(["consultation", "suivi", "urgence"], {
+    errorMap: () => ({ message: "Le type de rendez-vous est requis" }),
+  }),
+  notes: z.string().optional(),
+});
+
+type AppointmentFormData = z.infer<typeof appointmentSchema>;
+
+interface AppointmentEvent extends EventInput {
+  id: string;
   extendedProps: {
-    calendar: string;
+    patient_id: number;
+    status: string;
+    notes: string;
+    date: string;
+    notified?: boolean;
   };
 }
 
 const Calendar: React.FC = () => {
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
-    null
-  );
-  const [eventTitle, setEventTitle] = useState("");
-  const [eventStartDate, setEventStartDate] = useState("");
-  const [eventEndDate, setEventEndDate] = useState("");
-  const [eventLevel, setEventLevel] = useState("");
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const axiosPrivate = useAxiosPrivate();
+  // const [sending , setSending] = useState(false);
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<ValidationErrors>({});
   const calendarRef = useRef<FullCalendar>(null);
   const { isOpen, openModal, closeModal } = useModal();
+  const [selectedEvent, setSelectedEvent] = useState<AppointmentEvent | null>(null);
 
-  const calendarsEvents = {
-    Danger: "danger",
-    Success: "success",
-    Primary: "primary",
-    Warning: "warning",
-  };
+  // Récupérer les patients et les médecins
+  const { data: patients } = useQuery({
+    queryKey: ["patients"],
+    queryFn: async () => {
+      const response = await axiosPrivate.get("/patients");
+      return response.data;
+    },
+  });
 
-  useEffect(() => {
-    // Initialize with some events
-    setEvents([
-      {
-        id: "1",
-        title: "Event Conf.",
-        start: new Date().toISOString().split("T")[0],
-        extendedProps: { calendar: "Danger" },
-      },
-      {
-        id: "2",
-        title: "Meeting",
-        start: new Date(Date.now() + 86400000).toISOString().split("T")[0],
-        extendedProps: { calendar: "Success" },
-      },
-      {
-        id: "3",
-        title: "Workshop",
-        start: new Date(Date.now() + 172800000).toISOString().split("T")[0],
-        end: new Date(Date.now() + 259200000).toISOString().split("T")[0],
-        extendedProps: { calendar: "Primary" },
-      },
-    ]);
-  }, []);
+  // Récupérer les rendez-vous
+  const { data: appointments } = useQuery({
+    queryKey: ["appointments"],
+    queryFn: async () => {
+      try {
+        const response = await axiosPrivate.get("/appointments");
+        console.log(response.data)
+        return response.data;
+      } catch (error) {
+        console.log(error)
+      }
+    },
+  });
+
+  // Formatter les rendez-vous pour FullCalendar
+  const events: AppointmentEvent[] = appointments?.map((appt: AppointmentEvent) => ({
+    id: appt.id.toString(),
+    title: `${appt.patient.first_name} ${appt.patient.last_name} - ${appt.status}`,
+    start: appt.date,
+    end: new Date(new Date(appt.date?.toString()||"").getTime() + 30 * 60 * 1000), // Durée de 30 minutes
+    extendedProps: {
+      patient_id: appt.patient_id,
+      type: appt.type,
+      status: appt.status,
+      notified: appt.notified,
+      notes: appt.notes,
+      reminderSent: appt.reminder_sent || false,
+    },
+  })) || [];
+
+  // Configuration de React Hook Form
+  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<AppointmentFormData>({
+    resolver: zodResolver(appointmentSchema),
+    defaultValues: {
+      patient_id: "",
+      date: "",
+      type: undefined,
+      notes: "",
+    },
+  });
+
+  // Mutation pour ajouter ou mettre à jour un rendez-vous
+  const mutation = useMutation({
+    mutationFn: async (data: AppointmentFormData) => {
+      setError({});
+      if (selectedEvent) {
+        // Mise à jour
+        const response = await axiosPrivate.put(`/appointments/${selectedEvent.id}`, data);
+        return response.data;
+      } else {
+        // Création
+        const response = await axiosPrivate.post("/appointments", data);
+        console.log(response.data)
+        return response.data;
+      }
+
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      closeModal();
+      reset({
+        patient_id: "",
+        date: "",
+        type: undefined,
+        notes: "",
+      });
+      setError({
+        message: data.message
+      });
+      setSelectedEvent(null);
+      // setSending(true)
+      // setTimeout(() => setSending(false), 2500);
+    },
+    onError: (error: ApiError) => {
+      if (error.response?.status === 422) {
+        // Gérer les erreurs de validation côté serveur
+        console.log(error.response)
+        setError(error.response.data.errors || {});
+      } else {
+        setError({
+          general: "Une erreur est survenu"
+        })
+        console.log(error.response)
+      }
+      console.error("Erreur lors de l’ajout/mise à jour du rendez-vous", error);
+    },
+  });
+
+  // Mutation pour supprimer un rendez-vous
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await axiosPrivate.delete(`/appointments/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      closeModal();
+      setSelectedEvent(null);
+      // setSending(true)
+      // setTimeout(() => setSending(false), 2500);
+    },
+  });
 
   const handleDateSelect = (selectInfo: DateSelectArg) => {
-    resetModalFields();
-    setEventStartDate(selectInfo.startStr);
-    setEventEndDate(selectInfo.endStr || selectInfo.startStr);
+    reset({
+      date: selectInfo.end.toISOString().slice(0, 16)
+    });
+    setSelectedEvent(null);
     openModal();
   };
 
   const handleEventClick = (clickInfo: EventClickArg) => {
-    const event = clickInfo.event;
-    setSelectedEvent(event as unknown as CalendarEvent);
-    setEventTitle(event.title);
-    setEventStartDate(event.start?.toISOString().split("T")[0] || "");
-    setEventEndDate(event.end?.toISOString().split("T")[0] || "");
-    setEventLevel(event.extendedProps.calendar);
+    const event = clickInfo.event as unknown as AppointmentEvent;
+    setSelectedEvent(event);
+    reset({
+      patient_id: event.extendedProps.patient_id.toPrecision(),
+      date: (event.start as Date).toISOString().slice(0, 16),
+      notes: event.extendedProps.notes || "",
+    });
     openModal();
   };
 
-  const handleAddOrUpdateEvent = () => {
-    if (selectedEvent) {
-      // Update existing event
-      setEvents((prevEvents) =>
-        prevEvents.map((event) =>
-          event.id === selectedEvent.id
-            ? {
-                ...event,
-                title: eventTitle,
-                start: eventStartDate,
-                end: eventEndDate,
-                extendedProps: { calendar: eventLevel },
-              }
-            : event
-        )
-      );
-    } else {
-      // Add new event
-      const newEvent: CalendarEvent = {
-        id: Date.now().toString(),
-        title: eventTitle,
-        start: eventStartDate,
-        end: eventEndDate,
-        allDay: true,
-        extendedProps: { calendar: eventLevel },
-      };
-      setEvents((prevEvents) => [...prevEvents, newEvent]);
-    }
-    closeModal();
-    resetModalFields();
+  const onSubmit = (data: AppointmentFormData) => {
+    mutation.mutate(data);
   };
 
-  const resetModalFields = () => {
-    setEventTitle("");
-    setEventStartDate("");
-    setEventEndDate("");
-    setEventLevel("");
-    setSelectedEvent(null);
+  const handleDelete = () => {
+    if (selectedEvent) {
+      deleteMutation.mutate(selectedEvent.id);
+    }
   };
+
+  // Exporter les rendez-vous en PDF
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Rapport des rendez-vous", 10, 10);
+    events.forEach((event, index) => {
+      doc.text(
+          `${index + 1}. ${event.title} - ${event.start?.toString()}`,
+          10,
+          20 + index * 10
+      );
+    });
+    doc.save("rendez-vous.pdf");
+  };
+
+  // Options pour les patients (format compatible avec react-select)
+  const patientOptions = patients?.map((p: Patient) => ({
+    value: p.id.toString(),
+    label: `${p.first_name} ${p.last_name}`, // Assure-toi que les champs sont corrects (firstName et lastName)
+  })) || [];
 
   return (
-    <>
-      <PageMeta
-        title="React.js Calendar Dashboard | TailAdmin - Next.js Admin Dashboard Template"
-        description="This is React.js Calendar Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
-      />
-      <div className="rounded-2xl border  border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="custom-calendar">
-          <FullCalendar
-            ref={calendarRef}
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
-            headerToolbar={{
-              left: "prev,next addEventButton",
-              center: "title",
-              right: "dayGridMonth,timeGridWeek,timeGridDay",
-            }}
-            events={events}
-            selectable={true}
-            select={handleDateSelect}
-            eventClick={handleEventClick}
-            eventContent={renderEventContent}
-            customButtons={{
-              addEventButton: {
-                text: "Add Event +",
-                click: openModal,
-              },
-            }}
-          />
-        </div>
-        <Modal
-          isOpen={isOpen}
-          onClose={closeModal}
-          className="max-w-[700px] p-6 lg:p-10"
-        >
-          <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
-            <div>
-              <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-                {selectedEvent ? "Edit Event" : "Add Event"}
-              </h5>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Plan your next big moment: schedule or edit an event to stay on
-                track
-              </p>
-            </div>
-            <div className="mt-8">
-              <div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                    Event Title
-                  </label>
-                  <input
-                    id="event-title"
-                    type="text"
-                    value={eventTitle}
-                    onChange={(e) => setEventTitle(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-              </div>
-              <div className="mt-6">
-                <label className="block mb-4 text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Event Color
-                </label>
-                <div className="flex flex-wrap items-center gap-4 sm:gap-5">
-                  {Object.entries(calendarsEvents).map(([key, value]) => (
-                    <div key={key} className="n-chk">
-                      <div
-                        className={`form-check form-check-${value} form-check-inline`}
-                      >
-                        <label
-                          className="flex items-center text-sm text-gray-700 form-check-label dark:text-gray-400"
-                          htmlFor={`modal${key}`}
-                        >
-                          <span className="relative">
-                            <input
-                              className="sr-only form-check-input"
-                              type="radio"
-                              name="event-level"
-                              value={key}
-                              id={`modal${key}`}
-                              checked={eventLevel === key}
-                              onChange={() => setEventLevel(key)}
-                            />
-                            <span className="flex items-center justify-center w-5 h-5 mr-2 border border-gray-300 rounded-full box dark:border-gray-700">
-                              <span
-                                className={`h-2 w-2 rounded-full bg-white ${
-                                  eventLevel === key ? "block" : "hidden"
-                                }`}
-                              ></span>
-                            </span>
-                          </span>
-                          {key}
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Enter Start Date
-                </label>
-                <div className="relative">
-                  <input
-                    id="event-start-date"
-                    type="date"
-                    value={eventStartDate}
-                    onChange={(e) => setEventStartDate(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Enter End Date
-                </label>
-                <div className="relative">
-                  <input
-                    id="event-end-date"
-                    type="date"
-                    value={eventEndDate}
-                    onChange={(e) => setEventEndDate(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
-              <button
-                onClick={closeModal}
-                type="button"
-                className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
-              >
-                Close
-              </button>
-              <button
-                onClick={handleAddOrUpdateEvent}
-                type="button"
-                className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
-              >
-                {selectedEvent ? "Update Changes" : "Add Event"}
-              </button>
-            </div>
+      <>
+        <PageMeta
+            title="Gestion des rendez-vous"
+            description="Calendrier des rendez-vous pour la gestion des patients"
+        />
+        <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+          <div className="custom-calendar">
+            {mutation.isSuccess&& !!error.message &&
+                <Alert variant="success" seconds={3} title="Opération effectué" message={error.message}/>
+            }
+            <FullCalendar
+                ref={calendarRef}
+                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                initialView="dayGridMonth"
+                headerToolbar={{
+                  left: "prev,next addEventButton",
+                  center: "title",
+                  right: "dayGridMonth,timeGridWeek,timeGridDay exportButton",
+                }}
+                events={events}
+                selectable={true}
+                select={handleDateSelect}
+                eventClick={handleEventClick}
+                eventContent={renderEventContent}
+                customButtons={{
+                  addEventButton: {
+                    text: "Ajouter un rendez-vous +",
+                    click: () => {
+                      reset({
+                        patient_id: "",
+                        date: "",
+                        type: undefined,
+                        notes: "",
+                      });
+                      setSelectedEvent(null);
+                      openModal();
+                    },
+                  },
+                  exportButton: {
+                    text: "Exporter en PDF",
+                    click: exportToPDF,
+                  },
+                }}
+            />
           </div>
-        </Modal>
-      </div>
-    </>
+          <Modal
+              isOpen={isOpen}
+              onClose={() => {
+                setError({});
+                reset({
+                  patient_id: "",
+                  date: "",
+                  type: undefined,
+                  notes: "",
+                });
+                setSelectedEvent(null);
+                closeModal();
+
+              }}
+              className="max-w-[700px] p-6 lg:p-10"
+          >
+            <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
+              <div>
+                <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+                  {selectedEvent ? "Modifier le rendez-vous" : "Ajouter un rendez-vous"}
+                </h5>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Planifiez ou modifiez un rendez-vous pour un patient
+                </p>
+              </div>
+              <form onSubmit={handleSubmit(onSubmit)} className="mt-8">
+                <div>
+                  <Label>Patient</Label>
+                  <Controller
+                      name="patient_id"
+                      control={control}
+                      render={({ field }) => (
+                          <ReactSelect
+                              options={patientOptions}
+                              placeholder="Rechercher un patient..."
+                              value={patientOptions.find((option: { value: string; }) => option.value === field.value) || null}
+                              onChange={(selectedOption) => field.onChange(selectedOption ? selectedOption.value : "")}
+                              isClearable
+                              isSearchable
+                              className="text-sm text-gray-800 dark:text-white/30 dark:placeholder:text-white/30"
+                              classNamePrefix="react-select"
+                              styles={{
+                                control: (base) => ({
+                                  ...base,
+                                  borderColor: errors.patient_id || error.patient_id ? "#EF4444" : "#D1D5DB",
+                                  backgroundColor: "transparent",
+                                  padding: "0.25rem",
+                                  borderRadius: "0.5rem",
+                                  boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+                                  "&:hover": {
+                                    borderColor: errors.patient_id || error.patient_id ? "#EF4444" : "#93C5FD",
+                                  },
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  backgroundColor: "#fff",
+                                  color: "#374151",
+                                  borderRadius: "0.5rem",
+                                }),
+                                option: (base, state) => ({
+                                  ...base,
+                                  backgroundColor: state.isSelected ? "#3B82F6" : state.isFocused ? "#EFF6FF" : "#fff",
+                                  color: state.isSelected ? "#fff" : "#374151",
+                                  "&:active": {
+                                    backgroundColor: "#DBEAFE",
+                                  },
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  color: "#9CA3AF",
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  color: "#9CA3AF",
+                                }),
+                              }}
+                          />
+                      )}
+                  />
+                  {errors.patient_id && (
+                      <p className="mt-1.5 text-xs text-error-500">{errors.patient_id.message}</p>
+                  )}
+                  {error.patient_id && (
+                      <p className="mt-1.5 text-xs text-error-500">{error.patient_id}</p>
+                  )}
+                </div>
+
+                <div className="mt-6">
+                  <Label>Date et heure</Label>
+                  <Input
+                      type="datetime-local"
+                      {...register("date")}
+                      error={!!errors.date?.message || !!error.date}
+                      hint={errors.date?.message || error.date}
+                  />
+                </div>
+                <div className="mt-6">
+                  <Label>Type de rendez-vous</Label>
+                  <Controller
+                      name="type"
+                      control={control}
+                      render={({ field }) => (
+                          <Select
+                              options={[
+                                { value: "consultation", label: "Consultation" },
+                                { value: "suivi", label: "Suivi" },
+                                { value: "urgence", label: "Urgence" },
+                              ]}
+                              placeholder="Sélectionner le type"
+                              value={field.value}
+                              onChange={(value) => field.onChange(value)}
+                              error={!!errors.type}
+                              hint={errors.type?.message}
+                          />
+                      )}
+                  />
+                </div>
+
+                <div className="mt-6">
+                  <Label>Notes (facultatif)</Label>
+                  <Input
+                      type="text"
+                      {...register("notes")}
+                      error={!!errors.notes?.message || !!error.notes}
+                      hint={errors.notes?.message || error.notes}
+                  />
+                </div>
+                {error.general && (
+                    <div className="mb-4 p-3 rounded bg-red-100 text-red-700">
+                      {error.general}
+                    </div>
+                )}
+                {error.error && (
+                    <div className="mb-4 p-3 rounded bg-red-100 text-red-700">
+                      {error.error}
+                    </div>
+                )}
+
+                <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
+                  <Button disabled={deleteMutation.isPending||mutation.isPending} variant="outline"
+                      onClick={() => {
+                        closeModal();reset({
+                          patient_id: "",
+                          date: "",
+                          type: undefined,
+                          notes: "",
+                        });setSelectedEvent(null);
+                      }}>
+                    Fermer
+                  </Button>
+                  {selectedEvent && (
+                      <Button disabled={deleteMutation.isPending||mutation.isPending} onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
+                        {deleteMutation.isPending ? "Annulation en cours  ..." : "Annuler le rendez-vous"}
+                      </Button>
+                  )}
+                  <Button disabled={deleteMutation.isPending||mutation.isPending} variant={mutation.isPending? "outline":"primary"}>
+                    {selectedEvent ? "Mettre à jour" : mutation.isPending? "Ajout en cours ...": "Ajouter"}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </Modal>
+        </div>
+      </>
   );
 };
 
-const renderEventContent = (eventInfo: any) => {
-  const colorClass = `fc-bg-${eventInfo.event.extendedProps.calendar.toLowerCase()}`;
+const renderEventContent = (eventInfo: AppointmentEvent) => {
+  const status = eventInfo.event.extendedProps.status;
+  const colorClass =
+      status === "confirmed"
+          ? "fc-bg-success"
+          : status === "scheduled"
+              ? "fc-bg-primary"
+              : "fc-bg-danger";
+  const color =
+      colorClass === "fc-bg-success"
+          ? "text-green-500"
+          : colorClass === "fc-bg-primary"
+              ? "text-blue-500"
+              : "fc-bg-danger";
   return (
-    <div
-      className={`event-fc-color flex fc-event-main ${colorClass} p-1 rounded-sm`}
-    >
-      <div className="fc-daygrid-event-dot"></div>
-      <div className="fc-event-time">{eventInfo.timeText}</div>
-      <div className="fc-event-title">{eventInfo.event.title}</div>
-    </div>
+      <div
+          className={`event-fc-color flex fc-event-main ${colorClass} p-1 rounded-sm`}
+      >
+        <div className="fc-daygrid-event-dot"></div>
+        <div className={` fc-event-time ${color} `}>{eventInfo.timeText}</div>
+        <div className="fc-event-title">{eventInfo.event.title}</div>
+        {eventInfo.event.extendedProps.notified && (
+            <span className="ml-2 text-xs text-green-500">Rappel envoyé</span>
+        )}
+      </div>
   );
 };
 
