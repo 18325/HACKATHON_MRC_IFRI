@@ -6,7 +6,6 @@ import { useAxiosPrivate } from "../../hooks/useAxiosPrivate.ts";
 import {Controller, useForm} from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Select from "../form/Select.tsx";
 import Button from "../ui/button/Button.tsx";
 import { Patient } from "../../types/medicalTypes.ts";
 import {useEffect, useState} from "react";
@@ -17,11 +16,8 @@ import Alert from "../ui/alert/Alert.tsx";
 
 // Schéma de validation avec Zod pour les informations médicales
 const medicalSchema = z.object({
-    bloodGroup: z.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"], {
-        errorMap: () => ({ message: "Le groupe sanguin est requis" }),
-    }),
-    medicalHistory: z.string().optional(),
-    currentTreatments: z.string().optional(),
+    medical_history: z.string().optional(),
+    current_treatments: z.string().optional(),
     stage_mrc: z.number().int().min(1, "La date MRC doit être un entier positif égale à 1 minimum"),
 });
 
@@ -40,16 +36,6 @@ export default function PatientMedicalData({ id }: { id: string | undefined }) {
     const [err, setErr] = useState<ValidationError>({});
     const queryClient = useQueryClient();
     const axiosPrivate = useAxiosPrivate();
-    const bloodGroupOptions = [
-        { value: "A+", label: "A+" },
-        { value: "A-", label: "A-" },
-        { value: "B+", label: "B+" },
-        { value: "B-", label: "B-" },
-        { value: "AB+", label: "AB+" },
-        { value: "AB-", label: "AB-" },
-        { value: "O+", label: "O+" },
-        { value: "O-", label: "O-" },
-    ];
 
     // Récupérer les informations médicales du patient
     const { isLoading, error, data: patient } = useQuery({
@@ -71,9 +57,8 @@ export default function PatientMedicalData({ id }: { id: string | undefined }) {
     } = useForm<MedicalFormData>({
         resolver: zodResolver(medicalSchema),
         defaultValues: {
-            bloodGroup: undefined,
-            medicalHistory: "",
-            currentTreatments: "",
+            medical_history: "",
+            current_treatments: "",
             stage_mrc: 1,
         },
     });
@@ -82,10 +67,9 @@ export default function PatientMedicalData({ id }: { id: string | undefined }) {
     useEffect(() => {
         if (patient) {
             reset({
-                bloodGroup: patient.medical_data?.blood_group || undefined,
                 stage_mrc: patient.medical_data?.stage_mrc ,
-                currentTreatments: patient.medical_data?.current_treatments || "",
-                medicalHistory: patient.medical_data?.medical_history || "",
+                current_treatments: patient.medical_data?.current_treatments || "",
+                medical_history: patient.medical_data?.medical_history || "",
             });
         }
     }, [patient, reset]);
@@ -205,24 +189,7 @@ export default function PatientMedicalData({ id }: { id: string | undefined }) {
                         <div className="custom-scrollbar overflow-y-auto px-2 pb-3">
                             <div className="mt-2">
                                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                                    <div className="col-span-2 lg:col-span-1">
-                                        <Label>Groupe sanguin</Label>
-                                        <Controller
-                                            name="bloodGroup"
-                                            control={control}
-                                            render={({field}) => (
-                                                <Select
-                                                    options={bloodGroupOptions}
-                                                    placeholder="Sélectionner le groupe sanguin"
-                                                    value={field.value || ""}
-                                                    onChange={(value) => field.onChange(value)}
-                                                    error={!!errors.bloodGroup}
-                                                    hint={errors.bloodGroup?.message}
-                                                />
-                                            )}
-                                        />
-                                    </div>
-                                    <div className="col-span-1 lg:col-span-1">
+                                    <div className="col-span-2 lg:col-span-2">
                                         <Label>Stade MRC</Label>
                                         <Input
                                             type="number"
@@ -234,15 +201,15 @@ export default function PatientMedicalData({ id }: { id: string | undefined }) {
                                     <div className="col-span-2">
                                         <Label>Antécédents médicaux (facultatif)</Label>
                                         <Controller
-                                            name="medicalHistory"
+                                            name="medical_history"
                                             control={control}
                                             render={({ field }) => (
                                                 <TextArea
                                                     placeholder="Une description de l'historique médical"
                                                     value={field.value || ""}
                                                     onChange={(value) => field.onChange(value)}
-                                                    error={!!errors.medicalHistory || !!err.medical_history}
-                                                    hint={errors.medicalHistory?.message || err.medical_history}
+                                                    error={!!errors.medical_history || !!err.medical_history}
+                                                    hint={errors.medical_history?.message || err.medical_history}
                                                 />
                                             )}
                                         />
@@ -250,21 +217,18 @@ export default function PatientMedicalData({ id }: { id: string | undefined }) {
                                     <div className="col-span-2">
                                         <Label>Traitement en cours (facultatif)</Label>
                                         <Controller
-                                            name="currentTreatments"
+                                            name="current_treatments"
                                             control={control}
                                             render={({ field }) => (
                                                 <TextArea
                                                     placeholder="Une description des traitement en cours"
                                                     value={field.value || ""}
                                                     onChange={(value) => field.onChange(value)}
-                                                    error={!!errors.currentTreatments || !!err.current_treatments}
-                                                    hint={errors.currentTreatments?.message || err.current_treatments}
+                                                    error={!!errors.current_treatments || !!err.current_treatments}
+                                                    hint={errors.current_treatments?.message || err.current_treatments}
                                                 />
                                             )}
                                         />
-                                        {errors.medicalHistory && (
-                                            <p className="mt-1 text-xs text-red-500">{errors.medicalHistory.message}</p>
-                                        )}
                                     </div>
                                 </div>
                             </div>

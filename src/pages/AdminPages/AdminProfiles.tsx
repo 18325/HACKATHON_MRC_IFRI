@@ -8,7 +8,6 @@ import PageMeta from "../../components/common/PageMeta.tsx";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb.tsx";
 import ComponentCard from "../../components/common/ComponentCard.tsx";
 import Label from "../../components/form/Label.tsx";
-
 import Form from "../../components/form/Form.tsx";
 import Button from "../../components/ui/button/Button.tsx";
 import {User} from "../../types/medicalTypes.ts";
@@ -155,14 +154,8 @@ export default function AdminProfiles() {
                                 </div>
                                 <div className="flex items-center modal-footer sm:justify-end">
                                     <Button
-                                        variant={isPending || isPending ? "outline" : "primary"}
-                                        disabled={isPending || isPending}
-                                    >
-                                        {isPending?
-                                            "Modification en cours ..."
-                                         :
-                                            "Mettre à jour"
-                                        }
+                                        variant={isPending || isPending ? "outline" : "primary"} disabled={isPending || isPending}>
+                                        {isPending? "Modification en cours ..." : "Mettre à jour"}
                                     </Button>
                                 </div>
                             </div>
