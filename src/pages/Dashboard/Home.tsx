@@ -1,12 +1,23 @@
 import Metrics from "../../components/statistic/Metrics.tsx";
-import MonthlySalesChart from "../../components/statistic/MonthlySalesChart";
-import StatisticsChart from "../../components/statistic/StatisticsChart";
-import MonthlyTarget from "../../components/statistic/MonthlyTarget";
-import RecentOrders from "../../components/statistic/RecentOrders";
-import DemographicCard from "../../components/statistic/DemographicCard";
+import RecentAppointments from "../../components/statistic/RecentAppointments.tsx";
 import PageMeta from "../../components/common/PageMeta";
+import {useAxiosPrivate} from "../../hooks/useAxiosPrivate.ts";
+import {Stat} from "../../types/medicalTypes.ts";
+import {useQuery} from "@tanstack/react-query";
 
 export default function Home() {
+
+    const axiosPrivate = useAxiosPrivate();
+    const fetchStat  =  async (): Promise<Stat> => {
+        const response = await axiosPrivate.get(`/statistic/`)
+        return response.data as Stat;
+    }
+
+    const {isLoading,error,isError,   data:stat } = useQuery({
+        queryKey: ['stat'],
+        queryFn: fetchStat,
+    })
+
   return (
     <>
       <PageMeta
@@ -14,26 +25,12 @@ export default function Home() {
         description="Une application dédiée aux médecin pour la gestion des patients"
       />
       <div className="grid grid-cols-12 gap-4 md:gap-6">
-        <div className="col-span-12 space-y-6 xl:col-span-7">
-          <Metrics />
-
-          <MonthlySalesChart />
-        </div>
-
-        <div className="col-span-12 xl:col-span-5">
-          <MonthlyTarget />
-        </div>
-
         <div className="col-span-12">
-          <StatisticsChart />
+          <Metrics isLoading={isLoading} error={error} isError={isError} stat ={stat}/>
         </div>
 
-        <div className="col-span-12 xl:col-span-5">
-          <DemographicCard />
-        </div>
-
-        <div className="col-span-12 xl:col-span-7">
-          <RecentOrders />
+        <div className="col-span-12 ">
+          <RecentAppointments isLoading={isLoading} isError={isError} error={error} stat ={stat}/>
         </div>
       </div>
     </>

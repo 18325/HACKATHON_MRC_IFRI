@@ -46,7 +46,7 @@ export default function PatientInfoCard({ id }: { id: string | undefined }) {
     const axiosPrivate = useAxiosPrivate();
 
     // Récupérer les informations du patient
-    const { isLoading, error, data: patient } = useQuery({
+    const { isLoading, error, isPending, data: patient } = useQuery({
         queryKey: ["patient", id],
         queryFn: async (): Promise<Patient> => {
             const response = await axiosPrivate.get(`/patients/${id}`);
@@ -199,10 +199,7 @@ export default function PatientInfoCard({ id }: { id: string | undefined }) {
                     )}
                 </div>
 
-                <Button
-                    variant="outline"
-                    onClick={openModal}
-                >
+                <Button variant="outline" onClick={openModal} disabled={isPending} >
                     <svg className="fill-current" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path
                             fillRule="evenodd"
@@ -308,7 +305,6 @@ export default function PatientInfoCard({ id }: { id: string | undefined }) {
                                 variant="outline"
                                 onClick={handleCloseModal}
                                 disabled={updateMutation.isPending}
-                                className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
                             >
                                 Fermer
                             </Button>

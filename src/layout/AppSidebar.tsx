@@ -5,7 +5,7 @@ import { Link, useLocation } from "react-router";
 import {
   BoxCubeIcon,
   CalenderIcon,
-  ChevronDownIcon,
+  ChevronDownIcon, DocsIcon,
   GridIcon, GroupIcon,
   HorizontaLDots,
   PieChartIcon,
@@ -13,6 +13,7 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import useAuth from "../hooks/useAuth.ts";
+import Button from "../components/ui/button/Button.tsx";
 
 type NavItem = {
   name: string;
@@ -28,14 +29,14 @@ const navItems: NavItem[] = [
     path: "/user/home",
   },
   {
-    name: "Gestion des patients",
-    icon: <GroupIcon />,
-    path: "/user/patient"
-  },
-  {
     icon: <CalenderIcon />,
     name: "Gestion des rendez-vous",
     path: "/user/calendar",
+  },
+  {
+    name: "Gestion des patients",
+    icon: <GroupIcon />,
+    path: "/user/patient"
   },
   {
     icon: <UserCircleIcon />,
@@ -84,7 +85,7 @@ const othersItems: NavItem[] = [
   },
 ];
 
-const AppSidebar: React.FC = () => {
+function AppSidebar({openModal}: { openModal: () => void })  {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
   const {auth} = useAuth();
@@ -345,22 +346,20 @@ const AppSidebar: React.FC = () => {
                 )}
               </h2>
               {renderMenuItems(auth.role==="user"?navItems:adminItems, "main")}
-            </div>
-            <div className="">
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
-                }`}
+
+              {auth.role==="user" && <Button className={`menu-item group mt-8 menu-item-active`} variant="outline"  onClick={openModal}
               >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
-                ) : (
-                  <HorizontaLDots />
+                <span
+                    className={`menu-item-icon-size ${
+                        "menu-item-icon-active"
+                    }`}
+                >
+                  <DocsIcon  />
+                </span>
+                {(isExpanded || isHovered || isMobileOpen) && (
+                    <span className="menu-item-text text-blue-500">Générer un rapport</span>
                 )}
-              </h2>
-              {renderMenuItems(othersItems, "others")}
+              </Button>}
             </div>
           </div>
         </nav>

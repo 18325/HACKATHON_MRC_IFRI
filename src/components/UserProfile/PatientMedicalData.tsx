@@ -13,6 +13,7 @@ import {ApiError} from "../../types/types.ts";
 import Input from "../form/input/InputField.tsx";
 import TextArea from "../form/input/TextArea.tsx";
 import Alert from "../ui/alert/Alert.tsx";
+import Form from "../form/Form.tsx";
 
 // Schéma de validation avec Zod pour les informations médicales
 const medicalSchema = z.object({
@@ -38,7 +39,7 @@ export default function PatientMedicalData({ id }: { id: string | undefined }) {
     const axiosPrivate = useAxiosPrivate();
 
     // Récupérer les informations médicales du patient
-    const { isLoading, error, data: patient } = useQuery({
+    const { isLoading, error, isPending, data: patient } = useQuery({
         queryKey: ["patient_medical", id],
         queryFn: async (): Promise<Patient> => {
             const response = await axiosPrivate.get(`/patients/${id}`);
@@ -158,10 +159,7 @@ export default function PatientMedicalData({ id }: { id: string | undefined }) {
                     )}
                 </div>
 
-                <Button
-                    variant="outline"
-                    onClick={openModal}
-                >
+                <Button variant="outline" onClick={openModal} disabled={isPending}>
                     <svg className="fill-current" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"
                     >
                         <path
@@ -185,7 +183,7 @@ export default function PatientMedicalData({ id }: { id: string | undefined }) {
                             Mettez à jour les informations médicales du patient
                         </p>
                     </div>
-                    <form className="flex flex-col" onSubmit={handleSubmit(onSubmit)}>
+                    <Form className="flex flex-col" onSubmit={handleSubmit(onSubmit)}>
                         <div className="custom-scrollbar overflow-y-auto px-2 pb-3">
                             <div className="mt-2">
                                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
@@ -249,7 +247,7 @@ export default function PatientMedicalData({ id }: { id: string | undefined }) {
                                 )}
                             </Button>
                         </div>
-                    </form>
+                    </Form>
                 </div>
             </Modal>
         </div>

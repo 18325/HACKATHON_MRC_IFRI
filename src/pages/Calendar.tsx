@@ -20,7 +20,8 @@ import {ApiError} from "../types/types.ts";
 import Alert from "../components/ui/alert/Alert.tsx";
 import {Patient} from "../types/medicalTypes.ts";
 import Button from "../components/ui/button/Button.tsx";
-import Input from "../components/form/input/InputField.tsx"; // Importer react-select
+import Input from "../components/form/input/InputField.tsx";
+import Loader from "../components/ui/Loader.tsx"; // Importer react-select
 
 interface ValidationErrors {
   date?: string;
@@ -36,7 +37,7 @@ interface ValidationErrors {
 const appointmentSchema = z.object({
   patient_id: z.string().min(1, "Le patient est requis"),
   date: z.string().min(1, "La date est requise"),
-  type: z.enum(["consultation", "suivi", "urgence"], {
+  type: z.enum(["consultation", "suivi", "urgence", ""], {
     errorMap: () => ({ message: "Le type de rendez-vous est requis" }),
   }),
   notes: z.string().optional(),
@@ -74,7 +75,7 @@ const Calendar: React.FC = () => {
   });
 
   // Récupérer les rendez-vous
-  const { data: appointments } = useQuery({
+  const { data: appointments, isLoading } = useQuery({
     queryKey: ["appointments"],
     queryFn: async () => {
       try {
@@ -132,6 +133,7 @@ const Calendar: React.FC = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      console.log(data)
       closeModal();
       reset({
         patient_id: "",
@@ -149,11 +151,11 @@ const Calendar: React.FC = () => {
     onError: (error: ApiError) => {
       if (error.response?.status === 422) {
         // Gérer les erreurs de validation côté serveur
-        console.log(error.response)
         setError(error.response.data.errors || {});
       } else {
         setError({
-          general: "Une erreur est survenu"
+          general: "Une erreur est survenu",
+          message: error.response?.data.message
         })
         console.log(error.response)
       }
@@ -167,12 +169,11 @@ const Calendar: React.FC = () => {
       const response = await axiosPrivate.delete(`/appointments/${id}`);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       closeModal();
       setSelectedEvent(null);
-      // setSending(true)
-      // setTimeout(() => setSending(false), 2500);
+      setError({message: data.message})
     },
   });
 
@@ -196,6 +197,7 @@ const Calendar: React.FC = () => {
   };
 
   const onSubmit = (data: AppointmentFormData) => {
+    setError({});
     mutation.mutate(data);
   };
 
@@ -236,6 +238,12 @@ const Calendar: React.FC = () => {
             {mutation.isSuccess&& !!error.message &&
                 <Alert variant="success" seconds={3} title="Opération effectué" message={error.message}/>
             }
+            {deleteMutation.isSuccess&& !!error.message &&
+                <Alert variant="success" seconds={3} title="Opération effectué" message={error.message}/>
+            }
+
+            {isLoading?
+                <Loader className="h-screen" /> :
             <FullCalendar
                 ref={calendarRef}
                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -269,7 +277,7 @@ const Calendar: React.FC = () => {
                     click: exportToPDF,
                   },
                 }}
-            />
+            />}
           </div>
           <Modal
               isOpen={isOpen}
@@ -288,6 +296,9 @@ const Calendar: React.FC = () => {
               className="max-w-[700px] p-6 lg:p-10"
           >
             <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
+              {mutation.isError&& !!error.message &&
+                  <Alert variant="error" seconds={5} title="Opération échoué" message={error.message}/>
+              }
               <div>
                 <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
                   {selectedEvent ? "Modifier le rendez-vous" : "Ajouter un rendez-vous"}
@@ -399,7 +410,7 @@ const Calendar: React.FC = () => {
                   />
                 </div>
                 {error.general && (
-                    <div className="mb-4 p-3 rounded bg-red-100 text-red-700">
+                    <div className="mb-4 mt-2 p-3 rounded bg-red-100 text-red-700">
                       {error.general}
                     </div>
                 )}
@@ -421,14 +432,15 @@ const Calendar: React.FC = () => {
                       }}>
                     Fermer
                   </Button>
-                  {selectedEvent && (
-                      <Button disabled={deleteMutation.isPending||mutation.isPending} onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
+                  {selectedEvent? (
+                      <Button disabled={deleteMutation.isPending} onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
                         {deleteMutation.isPending ? "Annulation en cours  ..." : "Annuler le rendez-vous"}
                       </Button>
+                  ): (
+                      <Button disabled={mutation.isPending} variant={mutation.isPending? "outline":"primary"}>
+                        {mutation.isPending? "Ajout en cours ...": "Ajouter"}
+                      </Button>
                   )}
-                  <Button disabled={deleteMutation.isPending||mutation.isPending} variant={mutation.isPending? "outline":"primary"}>
-                    {selectedEvent ? "Mettre à jour" : mutation.isPending? "Ajout en cours ...": "Ajouter"}
-                  </Button>
                 </div>
               </form>
             </div>

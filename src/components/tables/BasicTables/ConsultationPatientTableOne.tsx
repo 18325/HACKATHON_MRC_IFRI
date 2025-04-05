@@ -21,6 +21,7 @@ import {useAxiosPrivate} from "../../../hooks/useAxiosPrivate.ts";
 import {ApiError} from "../../../types/types.ts";
 import TextArea from "../../form/input/TextArea.tsx";
 import Alert from "../../ui/alert/Alert.tsx";
+import Loader from "../../ui/Loader.tsx";
 
 // Schéma de validation pour une consultation
 const consultationSchema = z.object({
@@ -136,9 +137,7 @@ export default function ConsultationPatientTableOne({consultations, isLoading, e
                                 Erreur lors du chargement des données
                             </p>
                         ) : (
-                            <div className="h-32 flex text-gray-800 dark:text-white/90 items-center justify-center">
-                                <p>Chargement ...</p>
-                            </div>
+                            <Loader className="h-64" />
                         )
                     ) : consultations?.length === 0 ? (
                         <p className="text-center py-4 font-medium text-gray-800 dark:text-white/90">

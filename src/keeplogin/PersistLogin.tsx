@@ -2,7 +2,7 @@ import {useEffect, useState} from "react";
 import useRefreshToken from "../hooks/useRefreshToken.ts";
 import useAuth from "../hooks/useAuth.ts";
 import {Outlet} from "react-router";
-// import {RotatingLines} from "react-loader-spinner";
+import Loader from "../components/ui/Loader.tsx";
 
 
 function PersistLogin () {
@@ -41,7 +41,7 @@ function PersistLogin () {
         <>
             {
                 isLoading? <div className="w-screen h-screen text-gray-800 dark:text-white/90 flex justify-center items-center">
-                        Chargement ...
+                        <Loader className="h-64" />
                     </div>
                     : <Outlet />
             }

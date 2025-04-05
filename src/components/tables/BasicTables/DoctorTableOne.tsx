@@ -4,6 +4,7 @@ import { useAxiosPrivate } from "../../../hooks/useAxiosPrivate.ts";
 import { useQuery } from "@tanstack/react-query";
 import { Doctor } from "../../../types/medicalTypes.ts"; // Importer le type Doctor
 import { useState } from "react";
+import Loader from "../../ui/Loader.tsx";
 
 export default function DoctorTableOne({ searchTerm, itemsPerPage }: { searchTerm: string; itemsPerPage: number }) {
     const axiosPrivate = useAxiosPrivate();
@@ -16,7 +17,7 @@ export default function DoctorTableOne({ searchTerm, itemsPerPage }: { searchTer
         return response.data.body as Doctor[];
     };
 
-    const { isLoading, error, data: doctors } = useQuery({
+    const { isLoading, isError, data: doctors } = useQuery({
         queryKey: ["doctors"],
         queryFn: fetchDoctors,
     });
@@ -43,20 +44,10 @@ export default function DoctorTableOne({ searchTerm, itemsPerPage }: { searchTer
             <div className="max-w-full overflow-x-auto">
                 <div className="min-w-[1102px]">
                     {isLoading ? (
-                        error ? (
+                        isError ? (
                             <p className="text-center">Erreur lors du chargement des données</p>
                         ) : (
-                            <div className="h-32 flex items-center justify-center">
-                                {/*<RotatingLines*/}
-                                {/*    visible={true}*/}
-                                {/*    width="20"*/}
-                                {/*    strokeColor="#252DAE"*/}
-                                {/*    strokeWidth="5"*/}
-                                {/*    animationDuration="0.75"*/}
-                                {/*    ariaLabel="rotating-lines-loading"*/}
-                                {/*/>*/}
-                                Chargenment ...
-                            </div>
+                            <Loader className="h-64" />
                         )
                     ) : doctors?.length === 0 ? (
                         <p className="text-center py-4 font-medium text-gray-800 dark:text-white/90">
@@ -91,12 +82,6 @@ export default function DoctorTableOne({ searchTerm, itemsPerPage }: { searchTer
                                         >
                                             Téléphone
                                         </TableCell>
-                                        <TableCell
-                                            isHeader
-                                            className="flex justify-end px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                                        >
-                                            Détails
-                                        </TableCell>
                                     </TableRow>
                                 </TableHeader>
 
@@ -126,13 +111,6 @@ export default function DoctorTableOne({ searchTerm, itemsPerPage }: { searchTer
                                             </TableCell>
                                             <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                                                 {doctor.contact}
-                                            </TableCell>
-                                            <TableCell className="flex justify-end px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                                                {/*<Link to={`/dash/doctor/${doctor.id}`}>*/}
-                                                {/*    <Button size="sm" variant="primary">*/}
-                                                {/*        Voir plus de détails*/}
-                                                {/*    </Button>*/}
-                                                {/*</Link>*/}m
                                             </TableCell>
                                         </TableRow>
                                     ))}

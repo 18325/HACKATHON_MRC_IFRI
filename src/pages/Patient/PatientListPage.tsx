@@ -478,7 +478,6 @@ export default function PatientListPage() {
                                             {...register("emergencyContactPhone")}
                                             error={!!errors.emergencyContactPhone || !!error.emergencyContactPhone}
                                             hint={errors.emergencyContactPhone?.message || error.emergencyContactPhone}
-
                                         />
                                     </div>
                                 </div>

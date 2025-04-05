@@ -27,7 +27,6 @@ export default function App() {
                   auth.role === "admin"?
                       <Route path="/admin/*" element={<DashboardAdminRoute/>}/>
                       :<Route path="/user/*" element={<DashboardUserRoute/>}/>
-
                 }
               </Route>
             </Route>

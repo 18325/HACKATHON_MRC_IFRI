@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Patient } from "../../../types/medicalTypes.ts"; // Importer le type Patient
 import { useState } from "react";
 import {Link} from "react-router";
+import Loader from "../../ui/Loader.tsx";
 
 export default function PatientTableOne({ searchTerm, itemsPerPage }: { searchTerm: string; itemsPerPage: number }) {
     const axiosPrivate = useAxiosPrivate();
@@ -47,9 +48,7 @@ export default function PatientTableOne({ searchTerm, itemsPerPage }: { searchTe
                         error ? (
                             <p className="text-center">Erreur lors du chargement des données</p>
                         ) : (
-                            <div className="h-32 flex text-gray-800 dark:text-white/90 items-center justify-center">
-                                <p>Chargement ...</p>
-                            </div>
+                            <Loader className="h-64" />
                         )
                     ) : patients?.length === 0 ? (
                         <p className="text-center py-4 font-medium text-gray-800 dark:text-white/90">

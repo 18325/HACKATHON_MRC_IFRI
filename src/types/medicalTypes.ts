@@ -21,6 +21,18 @@ export interface Doctor {
     contact: string;
 }
 
+export interface Stat {
+    rdv_today: number;
+    rdv_future: number;
+    future_rdv: {
+        id: number;
+        first_name: string;
+        last_name: string;
+        date: string;
+        status: string;
+    }[]
+}
+
 // Interface pour User
 export interface User {
     id: number;
@@ -117,8 +129,8 @@ export interface Notification {
 // Interface pour AdministrativeData
 export interface AdministrativeData {
     id: number;
-    recordNumber: string;
-    referingDoctor: string;
+    record_number: string;
+    referring_doctor: string;
     emergencyContactName: string;
     emergencyContactPhone: string;
 }

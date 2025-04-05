@@ -45,7 +45,7 @@ export default function AdminInfoCard() {
     return response.data.body;
   };
 
-  const { data: user, refetch } = useQuery({
+  const { data: user, isPending, refetch } = useQuery({
     queryKey: ["user"],
     queryFn: fetchUser,
   });
@@ -65,7 +65,7 @@ export default function AdminInfoCard() {
   });
 
   // Mutation pour mettre à jour l'email de l'administrateur
-  const { mutate, isPending } = useMutation<
+  const { mutate, isPending:isPend } = useMutation<
       ApiResponse,
       AxiosError<{ errors?: ValidationErrors }>,
       AdminInfoFormData
@@ -161,10 +161,7 @@ export default function AdminInfoCard() {
             </div>
           </div>
 
-          <button
-              onClick={openModal}
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
-          >
+          <Button onClick={openModal} disabled={isPend} variant={"outline"}>
             <svg
                 className="fill-current"
                 width="18"
@@ -181,7 +178,7 @@ export default function AdminInfoCard() {
               />
             </svg>
             Modifier
-          </button>
+          </Button>
         </div>
 
         <Modal isOpen={isOpen} onClose={handleCloseModal} className="max-w-[700px] m-4">

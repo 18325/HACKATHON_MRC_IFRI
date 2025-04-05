@@ -4,6 +4,7 @@ import {useParams} from "react-router";
 import ConsultationPatientTables from "../Tables/ConsultationPatientTables.tsx";
 import PatientInfoCard from "../../components/UserProfile/PatientInfoCard.tsx";
 import PatientMedicalData from "../../components/UserProfile/PatientMedicalData.tsx";
+import PatientAdministrativeData from "../../components/UserProfile/PatientAdministrativeData.tsx";
 
 export default function PatientDetailPage() {
     const { id } = useParams();
@@ -18,6 +19,7 @@ export default function PatientDetailPage() {
             <div className="space-y-6">
                 <ConsultationPatientTables id={id}  />
                 <PatientMedicalData id={id} />
+                <PatientAdministrativeData id={id} />
                 <PatientInfoCard id={id} />
             </div>
         </div>
