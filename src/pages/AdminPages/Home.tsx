@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <>
       <PageMeta
-        title="AI4CKD"
+        title="Tableau de board"
         description="Une application dédiée aux médecin pour la gestion des patients"
       />
       <div className="grid grid-cols-12 gap-4 md:gap-6">
