@@ -44,7 +44,7 @@ export default function RecentAppointments({isLoading, error, stat, isError}: {i
           isLoading ?
                   <Loader className="h-64" />
                : stat?.future_rdv?.length==0 ?
-              <p className="text-center py-4 font-medium text-gray-800 dark:text-white/90" >Aucune transaction enregistrée</p> :
+              <p className="text-center py-4 font-medium text-gray-800 dark:text-white/90" >Aucun rendez-vous à venir</p> :
 
               <Table>
           {/* Table Header */}
@@ -80,7 +80,7 @@ export default function RecentAppointments({isLoading, error, stat, isError}: {i
           {/* Table Body */}
 
           <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {stat?.future_rdv.map((rdv) => (
+            {stat?.future_rdv?.map((rdv) => (
               <TableRow key={rdv.id} className="">
                 <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                   {rdv.date}
