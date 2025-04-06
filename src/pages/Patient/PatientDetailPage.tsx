@@ -15,7 +15,7 @@ export default function PatientDetailPage() {
                 title="Détail d'un patient"
                 description="Détail sur un patient"
             />
-            <PageBreadcrumb pageTitle="Détails du patient" pagePath="/user/patients"/>
+            <PageBreadcrumb pageTitle="Détails du patient" pagePath="/user/patient"/>
             <div className="space-y-6">
                 <ConsultationPatientTables id={id}  />
                 <PatientMedicalData id={id} />

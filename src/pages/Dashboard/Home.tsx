@@ -9,7 +9,7 @@ export default function Home() {
 
     const axiosPrivate = useAxiosPrivate();
     const fetchStat  =  async (): Promise<Stat> => {
-        const response = await axiosPrivate.get(`/statistic/`)
+        const response = await axiosPrivate.get(`/statistic`)
         return response.data as Stat;
     }
 
