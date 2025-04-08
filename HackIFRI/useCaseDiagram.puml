@@ -1,0 +1,78 @@
+@startuml
+title Diagramme de Cas d'Utilisation - Gestion des Données de Santé
+
+actor "Super Administrateur" as SuperAdmin
+actor "Médecin" as Medecin
+actor "Infirmier" as Infirmier
+actor "Laborantin" as Laborantin
+actor "Utilisateur Professionnel de Santé" as ProSante
+
+usecase "S'authentifier de manière sécurisée" as UC_Auth
+usecase "Récupération de mot de passe par email" as UC_PasswordRecovery
+usecase "Mettre à jour le profil" as UC_UpdateProfile
+
+usecase "Ajouter/Supprimer un utilisateur" as UC_ManageUsers
+usecase "Assigner un rôle à un utilisateur" as UC_AssignRole
+usecase "Modifier les permissions des utilisateurs" as UC_ModifyPermissions
+usecase "Activer/Désactiver un compte utilisateur" as UC_ToggleAccount
+usecase "Consulter l'historique des actions" as UC_AuditLog
+
+usecase "Enregistrer un nouveau patient" as UC_AddPatient
+usecase "Associer un médecin référent" as UC_AssociateReferent
+usecase "Modifier/Mise à jour du dossier patient" as UC_UpdatePatient
+usecase "Rechercher un patient par critères" as UC_SearchPatient
+usecase "Accéder au dossier patient et son historique" as UC_ViewPatientHistory
+usecase "Visualiser l'évolution des paramètres sous forme de graphiques" as UC_ViewGraph
+
+usecase "Ajouter une consultation" as UC_AddConsultation
+usecase "Ajouter les résultats d'examens médicaux" as UC_AddExamResults
+usecase "Enregistrer les paramètres vitaux" as UC_RecordVitals
+usecase "Planifier un rendez-vous médical" as UC_ScheduleAppointment
+usecase "Envoyer une notification de rappel au patient" as UC_SendReminder
+
+usecase "Créer un workflow personnalisé de suivi patient" as UC_CustomWorkflow
+usecase "Configurer des rappels et étapes de suivi" as UC_SetReminders
+usecase "Activer les notifications et alertes" as UC_EnableAlerts
+usecase "Alertes pour résultats critiques ou dégradation de l'état" as UC_AlertCritical
+usecase "Générer un rapport médical automatique" as UC_GenerateReport
+usecase "Automatiser la gestion des rendez-vous" as UC_AutomateAppointments
+
+ProSante --> UC_Auth
+UC_Auth <|-- UC_PasswordRecovery : <<include>>
+ProSante --> UC_UpdateProfile
+
+SuperAdmin --> UC_ManageUsers
+SuperAdmin --> UC_AssignRole
+SuperAdmin --> UC_ModifyPermissions
+UC_ManageUsers <|-- UC_ToggleAccount : <<include>>
+SuperAdmin --> UC_AuditLog
+
+Medecin --> UC_AddPatient
+Infirmier --> UC_AddPatient
+UC_AddPatient <|-- UC_AssociateReferent : <<include>>
+Medecin --> UC_UpdatePatient
+Infirmier --> UC_UpdatePatient
+Medecin --> UC_SearchPatient
+Infirmier --> UC_SearchPatient
+Medecin --> UC_ViewPatientHistory
+Infirmier --> UC_ViewPatientHistory
+UC_ViewPatientHistory <|-- UC_ViewGraph : <<extend>>
+
+Medecin --> UC_AddConsultation
+UC_AddConsultation <|-- UC_AddExamResults : <<include>>
+Medecin --> UC_RecordVitals
+Medecin --> UC_ScheduleAppointment
+Infirmier --> UC_ScheduleAppointment
+UC_ScheduleAppointment <|-- UC_SendReminder : <<extend>>
+
+Medecin --> UC_CustomWorkflow
+UC_CustomWorkflow <|-- UC_SetReminders : <<include>>
+
+Medecin --> UC_EnableAlerts
+Infirmier --> UC_EnableAlerts
+UC_EnableAlerts <|-- UC_AlertCritical : <<extend>>
+
+Medecin --> UC_GenerateReport
+UC_GenerateReport <|-- UC_AutomateAppointments : <<include>>
+
+@enduml
