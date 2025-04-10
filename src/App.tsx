@@ -4,15 +4,19 @@ import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
-import useAuth from "./hooks/useAuth.ts";
+// import useAuth from "./hooks/useAuth.ts";
 import DashboardUserRoute from "./DashboardUserRoute.tsx";
 import DashboardAdminRoute from "./DashboardAdminRoute.tsx";
 import PersistLogin from "./keeplogin/PersistLogin.tsx";
 import RequireAuth from "./keeplogin/RequireAuth.tsx";
+import NotAuthorize from "./pages/OtherPage/NotAuthorize.tsx";
+import Cookies from "js-cookie";
 
 export default function App() {
 
-  const {auth} = useAuth();
+  const valeur = Cookies.get('role');
+  // const {auth} = useAuth();
+  console.log(valeur)
 
   return (
     <>
@@ -23,11 +27,8 @@ export default function App() {
           <Route element={<PersistLogin/>}>
             <Route element={<RequireAuth/>}>
               <Route element={<AppLayout />}>
-                {
-                  auth.role === "admin"?
-                      <Route path="/admin/*" element={<DashboardAdminRoute/>}/>
-                      :<Route path="/user/*" element={<DashboardUserRoute/>}/>
-                }
+                  <Route path="/admin/*" element={<DashboardAdminRoute/>}/>
+                  <Route path="/user/*" element={<DashboardUserRoute/>}/>
               </Route>
             </Route>
           </Route>
@@ -37,6 +38,7 @@ export default function App() {
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />
+          <Route path="/user/deactivate" element={<NotAuthorize />} />
         </Routes>
       </Router>
     </>

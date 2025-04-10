@@ -19,6 +19,7 @@ export interface Doctor {
     last_name: string;
     email: string;
     contact: string;
+    status: boolean;
 }
 
 export interface Stat {

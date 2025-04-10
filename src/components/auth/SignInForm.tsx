@@ -8,8 +8,9 @@ import Input from "../form/input/InputField"; // Ton composant mis à jour
 import Button from "../ui/button/Button";
 import {axiosPrivate} from "../../services/api.ts";
 import useAuth from "../../hooks/useAuth.ts";
-import {useNavigate} from "react-router";
+import {Link, useNavigate} from "react-router";
 import {ApiError} from "../../types/types.ts";
+import Cookies from "js-cookie";
 
 const signInSchema = z.object({
   email: z.string().min(1, "L’email est requis").email("L’email doit être valide"),
@@ -20,6 +21,8 @@ const signInSchema = z.object({
 type SignInFormData = z.infer<typeof signInSchema>;
 
 export default function SignInForm() {
+// Stocker un cookie
+
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string|undefined>("");
   const navigate = useNavigate();
@@ -47,6 +50,12 @@ export default function SignInForm() {
         accessToken: response.data.body.accessToken,
         role: response.data.body.role,
       });
+      Cookies.set('role', response.data.body.role, {
+        expires: 7, // Expire dans 7 jours
+        secure: true, // Seulement en HTTPS
+        sameSite: 'strict', // Protection contre les attaques CSRF
+        path: '/', // Accessible sur tout le site
+      });
       if (response.data.body.role==="admin"){
         navigate("/admin/home");
       } else{
@@ -55,7 +64,12 @@ export default function SignInForm() {
     } catch (err) {
       console.log(err)
       const error = err as ApiError;
-      setErrorMessage(error.response?.data.message)
+      if(error.response?.status === 403) {
+        setErrorMessage(error.response?.data.message)
+      }
+      if(error.response?.status === 401) {
+        navigate("/user/deactivate");
+      }
     }
   };
 
@@ -109,9 +123,21 @@ export default function SignInForm() {
                   </span>
                   </div>
                   <p className="text-red-600">{errorMessage}</p>
-
                 </div>
-
+                <div className="flex items-center justify-end">
+                  {/*<div className="flex items-center gap-3">*/}
+                  {/*  <Checkbox checked={isChecked} onChange={setIsChecked} />*/}
+                  {/*  <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">*/}
+                  {/*    Keep me logged in*/}
+                  {/*  </span>*/}
+                  {/*</div>*/}
+                  <Link
+                      to="/reset-password"
+                      className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                  >
+                    Mot de passe oublié ?
+                  </Link>
+                </div>
                 <div>
                   <Button
                       className="w-full"

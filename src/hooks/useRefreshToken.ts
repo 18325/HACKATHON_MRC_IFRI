@@ -1,5 +1,6 @@
 import {axiosClient} from "../services/api.ts";
 import useAuth from "./useAuth.ts";
+import Cookies from "js-cookie";
 
 export interface ApiError {
     response?: {
@@ -24,6 +25,12 @@ const useRefreshToken = () => {
                 ...auth,
                 accessToken: response.data.body.accessToken,
                 role: response.data.body.role
+            });
+            Cookies.set('role', response.data.body.role, {
+                expires: 7, // Expire dans 7 jours
+                secure: true, // Seulement en HTTPS
+                sameSite: 'strict', // Protection contre les attaques CSRF
+                path: '/', // Accessible sur tout le site
             });
             console.log(response)
             return response.data.body.accessToken;

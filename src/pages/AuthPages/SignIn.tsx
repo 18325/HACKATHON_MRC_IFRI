@@ -6,7 +6,7 @@ export default function SignIn() {
   return (
     <>
       <PageMeta
-        title="AI4CKD"
+        title="Connexion"
         description="Une application dédiée aux médecin pour la gestion des patients"
       />
       <AuthLayout>
